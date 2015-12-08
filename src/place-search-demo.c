@@ -1,9 +1,11 @@
 #include "place-search-demo.h"
+#include <maps_service.h>
 
 typedef struct appdata {
 	Evas_Object *win;
 	Evas_Object *conform;
 	Evas_Object *label;
+	maps_service_h maps; /* Handle of Maps Service */
 } appdata_s;
 
 static void
@@ -61,6 +63,32 @@ create_base_gui(appdata_s *ad)
 }
 
 static bool
+search_place_cb(maps_error_e error, int request_id , int index, int total,
+		maps_place_h place, void *user_data)
+{
+	char *name = NULL;
+	int distance = 0;
+
+	maps_place_get_name(place, &name);
+	maps_place_get_distance(place, &distance);
+
+	char place_info[0x80] = {0};
+	snprintf(place_info, 0x80, "Place \"%s\" is in %d meters", name, distance);
+
+	appdata_s *ad = user_data;
+	elm_object_text_set(ad->label, place_info);
+
+	/* Don't forget to release the place handle */
+	maps_place_destroy(place);
+	free(name);
+
+	/* If return true, we will receive other places,
+	 * corresponding to our searching query parameters.
+	 * In this example, first place is enough for us. */
+	return false;
+}
+
+static bool
 app_create(void *data)
 {
 	/* Hook to take necessary actions before main event loop starts
@@ -70,6 +98,40 @@ app_create(void *data)
 	appdata_s *ad = data;
 
 	create_base_gui(ad);
+
+	/* Specify Maps Provider name. */
+	if(maps_service_create("HERE", &ad->maps) != MAPS_ERROR_NONE)
+		return false;
+
+	/* Set security key, issued by Maps Provider */
+	maps_service_set_provider_key(ad->maps, "pE-W9LeqN7zB9RtnwgBN/tZuCgj-LtWQ4RWN56XrVpA");
+
+	int request_id = 0;
+	maps_place_filter_h filter = NULL;
+	maps_coordinates_h coords = NULL;
+	maps_place_category_h category = NULL;
+
+	/* Create place search filter */
+	maps_place_filter_create(&filter);
+
+	/* Create transport category */
+	maps_place_category_create(&category);
+	maps_place_category_set_id(category, "transport");
+
+	/* Set place category to the search filter */
+	maps_place_filter_set_category(filter, category);
+
+	/* Create central coordinates of the search area */
+	maps_coordinates_create(41.9, 12.5, &coords);
+
+	/* Use Place API */
+	maps_service_search_place(ad->maps, coords, 5000, filter, NULL, search_place_cb, ad, &request_id);
+
+	elm_object_text_set(ad->label, "Run request");
+
+	maps_coordinates_destroy(coords);
+	maps_place_filter_destroy(filter);
+	maps_place_category_destroy(category);
 
 	return true;
 }
@@ -96,6 +158,8 @@ static void
 app_terminate(void *data)
 {
 	/* Release all resources. */
+	appdata_s *ad = data;
+	maps_service_destroy(ad->maps);
 }
 
 static void
