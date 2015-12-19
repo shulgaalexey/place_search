@@ -41,7 +41,7 @@ To ensure the Maps Service API execution, set the following privileges:
 ## 1. Create an Empty Tizen Native Application
 In the IDE, create an empty application using the basic UI application template, and run it on an emulator or a device.
 
-<img src="https://github.com/shulgaalexey/route_search/blob/master/doc/create_empty_prj.png" alt="Create Empty Tizen Native Project" style="width:500px"/>
+<img src="https://github.com/shulgaalexey/place_search/blob/master/doc/create_empty_prj.png" alt="Create Empty Tizen Native Project" style="width:500px"/>
 
 The "Hello Tizen" label appears on the screen at application startup.
 
